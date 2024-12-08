@@ -1,6 +1,9 @@
+// g++ .\src\fisplt.cpp -o .\bin\fisplt.exe
+
 #include <iostream>
 #include <cstdio>
 #include <cmath>
+#include <cstring>
 
 namespace plotter
 {
@@ -61,7 +64,7 @@ namespace plotter
   void plot()
   {
     fputs("       ", file);
-    for (double x = t1; x <= t2; x = (x*Z + 1.0)/Z) fputc(' ', file);
+    for (double x = t1; x < 0; x = (x*Z + 1.0)/Z) fputc(' ', file);
     fputs("t\n", file);
 
     fputs("       ", file);
@@ -83,53 +86,68 @@ namespace plotter
     return;
   }
 
-  void colCoef(const unsigned long& i)
+  void colCoef(const unsigned long& i, FILE* ftmp)
   {
-    char ctmp;
+    char stmp[5];
 
-    std::cout << "Especifique o tipo de funcao (a para MRU, b para MRUV): ";
-    std::cin >> ctmp;
+    fscanf(ftmp, "funcao %s\n", stmp);
 
-    if (ctmp == 'a')
+    if (strcmp(stmp, "mruv") == 0)
     {
-      std::cout << "Especifique v e s_0: ";
-      a[i] = 0;
-    }
-    else if (ctmp == 'b')
-    {
-      std::cout << "Especifique a, v_0 e s_0: ";
-      std::cin >> a[i];
+      fscanf(ftmp, "s = %lf + %lft + %lft^2/2\n", c + i, b + i, a + i);
       a[i] /= 2;
     }
-    std::cin >> b[i] >> c[i];
+    else if (strcmp(stmp, "mru") == 0)
+    {
+      fscanf(ftmp, "s = %lf + %lft\n", c + i, b + i);
+      a[i] = 0;
+    }
+    else
+      std::cout << "Uma funcao nao pode ser interpretada" << '\n';
 
     return;
   }
 
   void colFns()
   {
-    char *stmp = new char[20];
+    FILE* ftmp;
 
-    std::cout << "Especifique em que arquivo as funcoes serao plotadas: ";
+    ftmp = fopen("instrucoes.txt", "w");
+
+    fputs("plotar em (arquivo).txt\n", ftmp);
+    fputs("(n : unsigned int) funcoes\n", ftmp);
+    fputs("plotar t em [(t_1 : int) .. (t_2 : int)]\n", ftmp);
+    fputs("plotar s em [(s_1 : int) .. (s_2 : int)]\n", ftmp);
+    fputs("ampliar (z : unsigned int)x\n", ftmp);
+    fputs("funcao (mru/mruv)\n", ftmp);
+    fputs("(\"s = (s_0) + (v)t\" se mru, \"s = (s_0) + (v_0)t + (a)t^2/2\" se mruv. Descreva em decimais com ponto, deixe os sinais de soma e adicione o menos colado em numeros negativos.)\n", ftmp);
+    fputs("(continue a partir de `funcao ...` até ter n funcoes)", ftmp);
+
+    fclose(ftmp);
+
+    char* stmp = new char[30];
+    std::cout << "Edite `instrucoes.txt`, substitua tudo entre parênteses e entre qualquer coisa ao terminar. > ";
     std::cin >> stmp;
+
+    ftmp = fopen("instrucoes.txt", "r");
+
+    fscanf(ftmp, "plotar em %s\n", stmp);
 
     file = fopen(stmp, "w");
 
-    std::cout << "Especifique em que intervalo temporal (t1 e t2) as funcoes serao plotadas: ";
-    std::cin >> t1 >> t2;
+    fscanf(ftmp, "%lu funcoes\n", &n);
 
-    std::cout << "Especifique em que intervalo espacial (s1 e s2) as funcoes serao plotadas: ";
-    std::cin >> s1 >> s2;
+    fscanf(ftmp, "plotar t em [%ld .. %ld]\n", &t1, &t2);
 
-    std::cout << "Especifique o multiplicador de zoom com o qual as funcoes serao plotadas: ";
-    std::cin >> Z;
+    fscanf(ftmp, "plotar s em [%ld .. %ld]\n", &s1, &s2);
 
-    std::cout << "Especifique quantas funcoes serao plotadas: ";
-    std::cin >> n;
+    fscanf(ftmp, "ampliar %lux\n", &Z);
 
     a = new double[n]; b = new double[n]; c = new double[n];
 
-    for (unsigned long i = 0; i < n; i++) colCoef(i);
+    for (unsigned long i = 0; i < n; i ++) colCoef(i, ftmp);
+
+    fclose(ftmp);
   }
 
   void intro()
